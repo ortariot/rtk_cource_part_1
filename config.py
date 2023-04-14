@@ -1,0 +1,1 @@
+SQLALCHEMY_DATABASE_URI =  "postgresql://student:student@localhost/db_rtk"
