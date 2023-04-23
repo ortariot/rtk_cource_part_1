@@ -1,71 +1,68 @@
 from datetime import datetime
 
-from sqlalchemy import Column, ForeignKey, Integer, Date, LargeBinary, Boolean, String
-from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
-
+from sqlalchemy import Column, ForeignKey, Integer, LargeBinary, Boolean, String, DateTime, BigInteger, create_engine
+from sqlalchemy.orm import declarative_base, declarative_mixin, relationship
 
 from config import SQLALCHEMY_DATABASE_URI
 
 Base = declarative_base()
 
 
-class Users(Base):
+@declarative_mixin
+class BaseModelMixin:
+    id = Column(BigInteger, primary_key=True)
+    create_date = Column(DateTime, nullable=False, default=datetime.utcnow)
+    update_date = Column(DateTime, nullable=False,
+                         default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Users(Base, BaseModelMixin):
     __tablename__ = "user"
 
-    id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
-    phone = Column(String, nullable=False)
-    mail = Column(String, nullable=False)
-    login = Column(String, nullable=False)
+    phone = Column(String, unique=True, nullable=False)
+    mail = Column(String, unique=True, nullable=False)
+    login = Column(String, unique=True, nullable=False)
     password = Column(LargeBinary, nullable=False)
-    create_date = Column(Date, nullable=False)
-    update_date = Column(Date, default=datetime.now())
 
 
-class Tabs(Base):
+class Tabs(Base, BaseModelMixin):
     __tablename__ = "tab"
 
-    id = Column(Integer, primary_key=True)
     number = Column(Integer, nullable=False)
     name = Column(String)
     balance = Column(Integer, default=0)
-    user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
-    create_date = Column(Date, nullable=False)
-    update_date = Column(Date, default=datetime.now())
+    user_id = Column(ForeignKey('user.id'), nullable=False)
+    user = relationship('Users')
 
 
-class Plans(Base):
+class Plans(Base, BaseModelMixin):
     __tablename__ = 'plan'
 
-    id = Column(Integer, primary_key=True)
-    service_id = Column(Integer, ForeignKey('service.id'))
+    service_id = Column(ForeignKey('service.id'), nullable=False)
+    service = relationship('Services')
     name = Column(String, nullable=False)
     desc = Column(String, nullable=False)
     price = Column(Integer, nullable=False)
-    create_date = Column(Date, nullable=False)
-    update_date = Column(Date, default=datetime.now())
 
 
-class Services(Base):
+class Services(Base, BaseModelMixin):
     __tablename__ = 'service'
-    id = Column(Integer, primary_key=True)
+
     name = Column(String, nullable=False)
-    create_date = Column(Date, nullable=False)
-    update_date = Column(Date, default=datetime.now())
 
 
-class Accommodation(Base):
+class Accommodation(Base, BaseModelMixin):
     __tablename__ = 'accommodation'
 
-    id = Column(Integer, primary_key=True)
-    service_id = Column(Integer, ForeignKey('service.id'))
+    service_id = Column(ForeignKey('service.id'), nullable=False)
+    service = relationship('Services')
     status = Column(Boolean, default=True)
     addres = Column(String, nullable=False)
-    tab_id = Column(Integer, ForeignKey('tab.id'), nullable=True)
-    plan_id = Column(Integer, ForeignKey("plan.id"), nullable=True)
-    create_date = Column(Date, nullable=False)
-    update_date = Column(Date, default=datetime.now())
+    tab_id = Column(ForeignKey('tab.id'), nullable=False, unique=True)
+    tab = relationship('Tabs')
+    plan_id = Column(ForeignKey('plan.id'), nullable=False)
+    plan = relationship('Plans')
 
 
 if __name__ == '__main__':
