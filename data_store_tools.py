@@ -1,12 +1,10 @@
-from random import randint
 from typing import Optional
 
-from sqlalchemy import create_engine, select, update, insert
+from sqlalchemy import create_engine, select, update, func
 from sqlalchemy.orm import Session, Load, sessionmaker
 from sqlalchemy.exc import NoResultFound
 import bcrypt
 
-from config import SQLALCHEMY_DATABASE_URI
 from models import Users, Plans, Tabs, Services, Accommodations
 
 
@@ -28,7 +26,11 @@ class DataStoreTools():
                     try:
                         res = proc(*args, **kwargs, session=session)
                     except NoResultFound as e:
-                        print(f'error  - {e}')
+                        print(
+                            (f'error: {e}  function: {proc.__name__} '
+                             f'args: {args} kwargs: {kwargs}'
+                             )
+                        )
                         return None
             return res
         return wrapper
@@ -37,7 +39,7 @@ class DataStoreTools():
     def crate_user(
         self, name: str, phone: str, mail: str,
         login: str, password: str, session: Session
-    ) -> None:
+    ) -> Users:
         """
         1.Написать функцию, которая принимает
         данные пользователя и создает его
@@ -51,12 +53,13 @@ class DataStoreTools():
                 password.encode(), bcrypt.gensalt()),
         )
         session.add(user)
+        return user
 
     @session_executor
     def create_plan(
         self, name: str, desc: str, price: int,
         service_id: int, session: Session
-    ) -> None:
+    ) -> Plans:
         plan = Plans(
             name=name,
             service_id=service_id,
@@ -64,31 +67,34 @@ class DataStoreTools():
             price=price
         )
         session.add(plan)
+        return plan
 
     @session_executor
-    def create_service(self, name: str, session: Session) -> None:
+    def create_service(self, name: str, session: Session) -> Services:
         service = Services(name=name)
         session.add(service)
+        return service
 
     @session_executor
-    def create_tab(self, name: str, user_id: int, session: Session) -> None:
+    def create_tab(self, name: str, user_id: int, session: Session) -> Tabs:
         '''
         2.Написать функцию, которая принимает название ЛС,
         создает его и привязывает к определенному пользователю.
         Номер счета генерируется автоматически
         '''
         tab = Tabs(
-            number=randint(1000000, 9999999),
+            number=self.get_number(),
             name=name,
             user_id=user_id,
         )
         session.add(tab)
+        return tab
 
     @session_executor
     def create_accommodation(
         self, service_name: str, plan_name: str,
         tab_id: int, addres: str, session: Session
-    ) -> None:
+    ) -> Accommodations:
         """
         3.	Написать функцию, которая:
             Получает услугу из перечня по ее английскому наименованию (коду).
@@ -96,13 +102,15 @@ class DataStoreTools():
             наименованию (коду). Привязывает услугу с выбранным тарифом к
             определенному ЛС в статусе Активна
         """
-
-        service = self.get_service(service_name=service_name)
-        plan = self.get_plan(service_id=service.id, plan_name=plan_name)
-        tab = self.get_tab(tab_id=tab_id)
-
         try:
-            ac_query = insert(Accommodations).values(
+            service = self.get_service(service_name=service_name)
+            plan = self.get_plan(service_id=service.id, plan_name=plan_name)
+            tab = self.get_tab(tab_id=tab_id)
+        except AttributeError as e:
+            print(f'error  - {e}')
+            return None
+        try:
+            accommodations = Accommodations(
                 service_id=service.id,
                 addres=addres,
                 tab_id=tab.id,
@@ -112,7 +120,8 @@ class DataStoreTools():
             print(f'error  - {e}')
             return None
 
-        session.execute(ac_query)
+        session.add(accommodations)
+        return accommodations
 
     @session_executor
     def update_plan(
@@ -121,8 +130,10 @@ class DataStoreTools():
         '''
         4. Написать функцию, которая позволяет изменить тариф услуги по ID ЛС
         '''
+
         query_plan = select(Plans).options(
-            Load(Plans)).where(Plans.id == plan_id)
+            Load(Plans)
+        ).where(Plans.id == plan_id)
         query_plan_result = session.execute(query_plan)
         plan = query_plan_result.scalar_one()
 
@@ -134,13 +145,16 @@ class DataStoreTools():
             session.commit()
 
     @session_executor
-    def block_service(self, tab_id: int, session: Session) -> None:
+    def change_service_status(
+        self, tab_id: int, status: bool, session: Session
+    ) -> Accommodations:
         """
         5.	Написать функцию, которая позволяет заблокировать услугу по ID ЛС
         """
-        query = update(Accommodations).where(
-            Accommodations.tab_id == tab_id).values(status=False)
-        session.execute(query)
+        accommodation = self.get_accommodation(tab_id=tab_id)
+        accommodation.status = status
+        session.add(accommodation)
+        return accommodation
 
     @session_executor
     def get_tab(
@@ -162,11 +176,17 @@ class DataStoreTools():
         return tabs
 
     @session_executor
-    def get_accommodation(self, tab: Tabs, session: Session):
+    def get_accommodation(
+        self, tab: Tabs = None, tab_id: int = None,
+        session: Optional[Session] = None
+    ):
 
         query_accommodation = select(Accommodations).options(
             Load(Accommodations)
-        ).where(Accommodations.tab == tab)
+        ).where(
+            Accommodations.tab == tab if tab
+            else Accommodations.tab_id == tab_id
+        )
         query_accommodation_res = session.execute(query_accommodation)
         accommodation = query_accommodation_res.scalars().first()
 
@@ -252,3 +272,11 @@ class DataStoreTools():
                     return None
 
         return res
+
+    @session_executor
+    def get_number(self, session):
+
+        query_tab = select(Tabs.number).order_by(-Tabs.number).limit(1)
+        query_tab_result = session.execute(query_tab)
+        tabs = query_tab_result.scalar()
+        return tabs+1 if tabs else 1

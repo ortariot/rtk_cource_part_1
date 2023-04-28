@@ -13,13 +13,12 @@ Base = declarative_base()
 
 @declarative_mixin
 class BaseModelMixin:
-    id: int = Column(BigInteger, primary_key=True)
-    create_date: datetime = Column(
+    id = Column(BigInteger, primary_key=True)
+    create_date = Column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow
-    )
-    update_date: datetime = Column(
+        default=datetime.utcnow)
+    update_date = Column(
         DateTime,
         nullable=False,
         default=datetime.utcnow,
@@ -30,21 +29,33 @@ class BaseModelMixin:
 class Users(Base, BaseModelMixin):
     __tablename__ = "users"
 
-    name: str = Column(String, nullable=False)
-    phone: str = Column(String, unique=True, nullable=False)
-    mail: str = Column(String, unique=True, nullable=False)
-    login: str = Column(String, unique=True, nullable=False)
-    password: LargeBinary = Column(LargeBinary, nullable=False)
+    name = Column(String, nullable=False)
+    phone = Column(String, unique=True, nullable=False)
+    mailr = Column(String, unique=True, nullable=False)
+    login = Column(String, unique=True, nullable=False)
+    password = Column(LargeBinary, nullable=False)
+
+    def __repr__(self):
+        return (
+            f'id: {self.id} name: {self.name} login: {self.login} '
+            f'phone: {self.phone}, e-mail: {self.mail}'
+        )
 
 
 class Tabs(Base, BaseModelMixin):
     __tablename__ = "tabs"
 
-    number: int = Column(Integer, nullable=False)
-    name: str = Column(String)
-    balance: int = Column(Integer, default=0)
-    user_id: int = Column(ForeignKey('users.id'), nullable=False)
-    user: Users = relationship('Users')
+    number = Column(Integer, nullable=False)
+    name = Column(String)
+    balance = Column(Integer, default=0)
+    user_id = Column(ForeignKey('users.id'), nullable=False)
+    users = relationship('Users')
+
+    def __repr__(self):
+        return (
+            f'id: {self.id} name: {self.name} number: {self.number} '
+            f'balance: {self.balance} user_id: {self.user_id}'
+        )
 
 
 class Services(Base, BaseModelMixin):
@@ -52,28 +63,46 @@ class Services(Base, BaseModelMixin):
 
     name = Column(String, nullable=False, unique=True)
 
+    def __repr__(self):
+        return f'id: {self.id} name: {self.name}'
+
 
 class Plans(Base, BaseModelMixin):
     __tablename__ = 'plans'
 
-    service_id: int = Column(ForeignKey('services.id'), nullable=False)
-    service: Services = relationship('Services')
-    name: str = Column(String, nullable=False)
-    desc: str = Column(String, nullable=False)
-    price: int = Column(Integer, nullable=False)
+    service_id = Column(ForeignKey('services.id'), nullable=False)
+    service = relationship('Services')
+    name = Column(String, nullable=False)
+    desc = Column(String, nullable=False)
+    price = Column(Integer, nullable=False)
+
+    def __repr__(self):
+        return (
+            f'id: {self.id} name: {self.name} description: {self.desc} '
+            f'price: {self.price} service_id: {self.service_id}'
+        )
 
 
 class Accommodations(Base, BaseModelMixin):
     __tablename__ = 'accommodations'
 
-    service_id: int = Column(ForeignKey('services.id'), nullable=False)
-    service: Services = relationship('Services')
-    status: bool = Column(Boolean, default=True)
-    addres: str = Column(String, nullable=False)
-    tab_id: int = Column(ForeignKey('tabs.id'), nullable=False, unique=True)
-    tab: Tabs = relationship('Tabs')
-    plan_id: int = Column(ForeignKey('plans.id'), nullable=False)
-    plan: Plans = relationship('Plans')
+    service_id = Column(ForeignKey('services.id'), nullable=False)
+    service = relationship('Services')
+
+    status = Column(Boolean, default=True)
+    addres = Column(String, nullable=False)
+
+    tab_id = Column(ForeignKey('tabs.id'), nullable=False, unique=True)
+    tab = relationship('Tabs')
+    plan_id = Column(ForeignKey('plans.id'), nullable=False)
+    plan = relationship('Plans')
+
+    def __repr__(self):
+        return (
+            f'id: {self.id} addres: {self.addres} status: {self.status} '
+            f'tab_id: {self.tab_id} service_id: {self.service_id} '
+            f'plan_id {self.plan_id}'
+        )
 
 
 if __name__ == '__main__':
