@@ -31,7 +31,7 @@ class Users(Base, BaseModelMixin):
 
     name = Column(String, nullable=False)
     phone = Column(String, unique=True, nullable=False)
-    mailr = Column(String, unique=True, nullable=False)
+    mail = Column(String, unique=True, nullable=False)
     login = Column(String, unique=True, nullable=False)
     password = Column(LargeBinary, nullable=False)
 
