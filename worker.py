@@ -13,7 +13,9 @@ if __name__ == '__main__':
                             )
 
     tab = tools.create_tab('home_internet', user.id)
-    service = tools.create_service('s_internet')
+
+    service = tools.create_service('s_internet', '12412442')
+
     tools.create_plan('s_start', '50 mbps', 450, service.id)
     acc = tools.create_accommodation(
         's_internet', 's_start', tab.id, 'nsk'

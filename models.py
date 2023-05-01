@@ -62,9 +62,10 @@ class Services(Base, BaseModelMixin):
     __tablename__ = 'services'
 
     name = Column(String, nullable=False, unique=True)
+    code = Column(String, nullable=False, unique=True)
 
     def __repr__(self):
-        return f'id: {self.id} name: {self.name}'
+        return f'id: {self.id} name: {self.name} name: {self.code}'
 
 
 class Plans(Base, BaseModelMixin):

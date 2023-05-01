@@ -70,8 +70,11 @@ class DataStoreTools():
         return plan
 
     @session_executor
-    def create_service(self, name: str, session: Session) -> Services:
-        service = Services(name=name)
+    def create_service(
+        self, name: str, code:
+        str, session: Session
+    ) -> Services:
+        service = Services(name=name, code=code)
         session.add(service)
         return service
 
